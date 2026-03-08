@@ -1,1 +1,94 @@
-version: '3.8'\n\nservices:\n  flask-app:\n    image: flask-app:latest\n    build: ./flask-app\n    ports:\n      - '5000:5000'\n    networks:\n      - dev-net\n    healthcheck:\n      test: ['CMD-SHELL', 'curl --fail http://localhost:5000/ || exit 1']\n      interval: 30s\n      timeout: 10s\n      retries: 5\n\n  prometheus:\n    image: prom/prometheus:latest\n    ports:\n      - '9090:9090'\n    volumes:\n      - ./prometheus:/etc/prometheus/prometheus.yml\n    networks:\n      - dev-net\n    healthcheck:\n      test: ['CMD-SHELL', 'curl --fail http://localhost:9090/ || exit 1']\n      interval: 30s\n      timeout: 10s\n      retries: 5\n\n  grafana:\n    image: grafana/grafana:latest\n    ports:\n      - '3000:3000'\n    networks:\n      - dev-net\n    healthcheck:\n      test: ['CMD-SHELL', 'curl --fail http://localhost:3000/ || exit 1']\n      interval: 30s\n      timeout: 10s\n      retries: 5\n\n  jaeger:\n    image: jaegertracing/all-in-one:1.29\n    ports:\n      - '5775:5775'\n      - '6831:6831/udp'\n      - '16686:16686'\n      - '14268:14268'\n    networks:\n      - dev-net\n    healthcheck:\n      test: ['CMD-SHELL', 'curl --fail http://localhost:16686/ || exit 1']\n      interval: 30s\n      timeout: 10s\n      retries: 5\n\nnetworks:\n  dev-net:\n    driver: bridge\n
+services:
+  flask-app:
+    image: flask-app:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+      - "8000:8000"
+    networks:
+      - dev-net
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4317
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:5000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - dev-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:9090/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./monitoring/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./monitoring/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - dev-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "16686:16686"
+      - "14268:14268"
+      - "4317:4317"
+    networks:
+      - dev-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl --fail http://localhost:16686/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  rancher:
+    image: rancher/rancher:stable
+    profiles:
+      - rancher
+    privileged: true
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - rancher-data:/var/lib/rancher
+    networks:
+      - dev-net
+    healthcheck:
+      test: ["CMD-SHELL", "curl -k --fail https://localhost/ping || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+
+networks:
+  dev-net:
+    driver: bridge
+
+volumes:
+  rancher-data:
