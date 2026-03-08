@@ -24,9 +24,40 @@ docker --version
 docker compose version
 ```
 
+If `docker: command not found` or `docker compose` is unavailable (Ubuntu/Codespaces):
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo $VERSION_CODENAME) stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
+If you are on macOS/Windows, install Docker Desktop and then verify:
+```bash
+docker --version
+docker compose version
+```
+
 ### Python (for local tests)
 - Verify:
 ```bash
+python3 --version
+pip3 --version
+```
+
+If missing on Ubuntu/Codespaces:
+```bash
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-venv
 python3 --version
 pip3 --version
 ```
@@ -35,6 +66,31 @@ pip3 --version
 - Verify:
 ```bash
 kubectl version --client
+```
+
+If missing on Ubuntu/Codespaces:
+```bash
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gpg
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+sudo apt-get install -y kubectl
+kubectl version --client
+```
+
+### Git, curl, jq (used by commands in this repo)
+- Verify:
+```bash
+git --version
+curl --version
+jq --version
+```
+
+If missing on Ubuntu/Codespaces:
+```bash
+sudo apt-get update
+sudo apt-get install -y git curl jq
 ```
 
 ## 1.3 Clone repository

@@ -1,5 +1,35 @@
 # Quick Manual (Copy-Paste)
 
+## 0. Install Missing Tools (Only if command not found)
+
+Check:
+```bash
+docker --version
+docker compose version
+python3 --version
+pip3 --version
+kubectl version --client
+git --version
+curl --version
+jq --version
+```
+
+Ubuntu/Codespaces install:
+```bash
+sudo apt-get update
+sudo apt-get install -y ca-certificates curl gnupg lsb-release git jq python3 python3-pip python3-venv apt-transport-https
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo $VERSION_CODENAME) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin kubectl
+sudo usermod -aG docker $USER
+newgrp docker
+```
+
 ## 1. Start Core Stack
 
 ```bash
