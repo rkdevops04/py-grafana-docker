@@ -1,0 +1,19 @@
+# Use the official Python image from the Docker Hub
+FROM python:3.9-slim AS base
+
+# Set the working directory
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY app.py .
+
+# Run the application
+CMD ["python", "app.py"]
+
+# Multi-stage build
+# Additional stage for production (optional)
+# FROM base AS production

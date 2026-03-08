@@ -1,0 +1,5 @@
+# Python dependencies
+Flask
+prometheus-client
+opentelemetry-api
+opentelemetry-sdk
