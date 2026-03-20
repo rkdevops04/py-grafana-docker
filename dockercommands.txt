@@ -1,0 +1,213 @@
+Docker and DevOps Command Reference
+Project: py-grafana-docker
+
+========================================
+1) Docker Basics
+========================================
+
+Show running containers:
+docker ps
+
+Show all containers (running + stopped):
+docker ps -a
+
+Show all containers with useful columns:
+docker ps -a --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
+
+List images:
+docker images
+
+List images with digest and size:
+docker images --digests
+
+Show container logs:
+docker logs <container_name>
+
+Follow container logs live:
+docker logs -f <container_name>
+
+Show last 100 log lines:
+docker logs --tail 100 <container_name>
+
+Start a container:
+docker start <container_name>
+
+Stop a container:
+docker stop <container_name>
+
+Restart a container:
+docker restart <container_name>
+
+Run a command inside a container:
+docker exec -it <container_name> sh
+
+Inspect full container config:
+docker inspect <container_name>
+
+Remove stopped container:
+docker rm <container_name>
+
+Remove image:
+docker rmi <image_name>
+
+========================================
+2) Docker Compose (Project Commands)
+========================================
+
+Bring up core stack (build + detached):
+docker compose up -d --build
+
+Bring up stack with Rancher profile:
+docker compose --profile rancher up -d --build
+
+Start only Rancher profile service:
+docker compose --profile rancher up -d rancher
+
+Show compose service status:
+docker compose ps
+
+Show specific service status:
+docker compose ps rancher
+
+Build/rebuild services:
+docker compose build
+
+Build without cache:
+docker compose build --no-cache
+
+Restart specific services:
+docker compose restart flask-app
+docker compose restart prometheus grafana
+docker compose restart rancher
+
+View logs by service:
+docker compose logs -f flask-app
+docker compose logs -f prometheus
+docker compose logs -f grafana
+docker compose logs -f jaeger
+docker compose logs -f rancher
+
+Stop and remove compose resources:
+docker compose down
+
+Stop and remove with volumes:
+docker compose down -v
+
+========================================
+3) Build / Image Commands
+========================================
+
+Build app image manually:
+docker build -t flask-app:latest .
+
+Save image for import into Rancher k3s runtime:
+docker save flask-app:latest | docker exec -i py-grafana-docker-rancher-1 ctr -n k8s.io images import -
+
+========================================
+4) URLs in GitHub Codespaces
+========================================
+
+Print service URLs:
+echo "App: https://${CODESPACE_NAME}-5000.app.github.dev"
+echo "Metrics: https://${CODESPACE_NAME}-8000.app.github.dev/metrics"
+echo "Grafana: https://${CODESPACE_NAME}-3000.app.github.dev"
+echo "Prometheus: https://${CODESPACE_NAME}-9090.app.github.dev"
+echo "Jaeger: https://${CODESPACE_NAME}-16686.app.github.dev"
+echo "Rancher: https://${CODESPACE_NAME}-8443.app.github.dev"
+
+Open a URL in host browser from codespace:
+"$BROWSER" "https://${CODESPACE_NAME}-3000.app.github.dev"
+
+========================================
+5) Jenkins Commands Used In Session
+========================================
+
+Check Jenkins endpoint via tunnel:
+curl -I --connect-timeout 10 --max-time 20 'https://redesigned-carnival-76g9rg9w9x2rrv6-8088.app.github.dev/job/py-grafana-docker-pipeline/'
+
+Check Jenkins local availability:
+curl -I --connect-timeout 3 --max-time 8 'http://localhost:8088/'
+
+Start Jenkins container used in session:
+docker start jenkins-local
+
+Check Jenkins running status:
+docker ps --filter name=jenkins-local --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
+
+Read Jenkins logs:
+docker logs --tail 80 jenkins-local
+
+Check jobs API (with auth):
+curl --globoff -sS -u 'admin:Admin@12345' 'http://localhost:8088/api/json?tree=jobs[name,url,color]'
+
+Get Jenkins crumb:
+curl -sS -u 'admin:Admin@12345' 'http://localhost:8088/crumbIssuer/api/json'
+
+Trigger parameterized build (session command pattern):
+CR=$(curl -sS -u 'admin:Admin@12345' 'http://localhost:8088/crumbIssuer/api/json')
+F=$(echo "$CR" | sed -n 's/.*"crumbRequestField":"\([^\"]*\)".*/\1/p')
+C=$(echo "$CR" | sed -n 's/.*"crumb":"\([^\"]*\)".*/\1/p')
+curl -sS -u 'admin:Admin@12345' -H "$F: $C" -X POST 'http://localhost:8088/job/py-grafana-docker-pipeline/buildWithParameters?delay=0sec'
+
+Check specific build state:
+curl --globoff -sS -u 'admin:Admin@12345' 'http://localhost:8088/job/py-grafana-docker-pipeline/6/api/json?tree=number,result,building,url,timestamp'
+
+Install Jenkins plugin (stage view):
+docker exec jenkins-local jenkins-plugin-cli --plugin-download-directory /var/jenkins_home/plugins --plugins pipeline-stage-view
+
+Restart Jenkins container after plugin install:
+docker restart jenkins-local
+
+========================================
+6) Rancher Password Commands Used In Session
+========================================
+
+Get bootstrap password from logs:
+docker logs $(docker compose ps -q rancher) 2>&1 | grep -i "Bootstrap Password" | tail -n 1
+
+Reset Rancher admin password:
+docker exec $(docker compose ps -q rancher) reset-password
+
+Check Rancher service health:
+docker compose ps rancher
+
+========================================
+7) Kubernetes Commands From Manual Flow
+========================================
+
+Apply all k8s manifests:
+kubectl apply -k k8s
+
+Check pods and nodes:
+kubectl -n observability-demo get pods -o wide
+kubectl get nodes -o wide
+
+Run kubectl inside Rancher container:
+docker exec py-grafana-docker-rancher-1 kubectl get nodes
+
+Install kube-state-metrics in Rancher k3s:
+docker exec py-grafana-docker-rancher-1 kubectl apply -k 'github.com/kubernetes/kube-state-metrics/examples/standard?ref=v2.13.0'
+
+========================================
+8) Quick Health Checks
+========================================
+
+Flask app:
+curl http://localhost:5000/
+
+Flask metrics:
+curl http://localhost:8000/metrics
+
+Prometheus targets:
+curl -s http://localhost:9090/api/v1/targets | jq -r '.data.activeTargets[] | [.labels.job,.scrapeUrl,.health] | @tsv'
+
+List kube metrics names:
+curl -s 'http://localhost:9090/api/v1/label/__name__/values' | jq -r '.data[]' | grep '^kube_' | head
+
+========================================
+9) Notes
+========================================
+
+- If a GitHub Codespaces URL returns tunnel auth/401, authenticate in browser with your GitHub session first.
+- Rancher bootstrap password is typically only for first login flow. If it fails later, use reset-password command.
+- Jenkins crumb-based API calls may require authenticated session/cookie context depending on CSRF settings.

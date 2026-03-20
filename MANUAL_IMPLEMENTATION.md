@@ -305,6 +305,45 @@ docker compose down
 docker compose down -v
 ```
 
+## 9.4 Run updated `app.py` after code changes
+
+If you edited `app.py` and want to run it directly from the repo (instead of the compose `flask-app` container), use:
+
+```bash
+cd /workspaces/py-grafana-docker
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+docker compose stop flask-app
+python app.py
+```
+
+If `.venv` already exists, use this quick rerun one-liner:
+
+```bash
+cd /workspaces/py-grafana-docker && source .venv/bin/activate && docker compose stop flask-app && python app.py
+```
+
+Verify in another terminal:
+
+```bash
+curl http://localhost:5000/
+curl http://localhost:8000/metrics
+```
+
+For Codespaces URLs:
+
+```bash
+echo "App: https://${CODESPACE_NAME}-5000.app.github.dev"
+echo "Metrics: https://${CODESPACE_NAME}-8000.app.github.dev/metrics"
+```
+
+When done testing direct run mode, switch back to compose-managed app:
+
+```bash
+docker compose up -d flask-app
+```
+
 ## 10. Local Testing
 
 Install dependencies and run tests:
