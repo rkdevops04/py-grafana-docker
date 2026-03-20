@@ -27,7 +27,7 @@ def setup_tracing() -> None:
 @metrics.time()
 def hello():
     with tracer.start_as_current_span("GET /"):
-        return 'Hello, World!'
+        return 'Hello, World! RAKESH WORLD!'
 
 if __name__ == '__main__':
     setup_tracing()
