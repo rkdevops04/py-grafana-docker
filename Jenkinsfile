@@ -12,6 +12,9 @@ pipeline {
     string(name: 'DOCKER_REGISTRY', defaultValue: 'docker.io', description: 'Docker registry hostname')
     string(name: 'DOCKER_IMAGE', defaultValue: 'rkdevops04/flask-app', description: 'Docker image name (without registry)')
     string(name: 'DOCKER_TAG', defaultValue: '', description: 'Override Docker tag. Empty = build number + short sha')
+    string(name: 'BLACKDUCK_URL', defaultValue: 'https://blackduck.example.com', description: 'Black Duck server URL')
+    string(name: 'VERACODE_SCAN_JAR', defaultValue: 'pipeline-scan.jar', description: 'Path to Veracode Pipeline Scan jar on the Jenkins agent')
+    string(name: 'SYSDIG_API_URL', defaultValue: 'https://secure.sysdig.com', description: 'Sysdig Secure API URL')
     booleanParam(name: 'PUSH_GIT_TAG', defaultValue: false, description: 'Push git tag to origin')
     booleanParam(name: 'PUBLISH_DOCKER_IMAGE', defaultValue: false, description: 'Push Docker image to registry')
     booleanParam(name: 'RUN_SONAR', defaultValue: false, description: 'Run Sonar scan and quality gate')
@@ -145,9 +148,14 @@ pipeline {
                 withCredentials([string(credentialsId: 'blackduck-api-token', variable: 'BLACKDUCK_API_TOKEN')]) {
                   sh '''#!/usr/bin/env bash
                     set -euo pipefail
-                    echo "Running Black Duck scan"
-                    # Replace with your org-specific detect command.
-                    # bash <(curl -s -L https://detect.blackduck.com/detect10.sh) --blackduck.api.token="${BLACKDUCK_API_TOKEN}"
+                    command -v curl >/dev/null
+                    echo "Running Black Duck Detect scan against ${BLACKDUCK_URL}"
+                    bash <(curl -s -L https://detect.blackduck.com/detect10.sh) \
+                      --blackduck.url="${BLACKDUCK_URL}" \
+                      --blackduck.api.token="${BLACKDUCK_API_TOKEN}" \
+                      --detect.project.name="py-grafana-docker" \
+                      --detect.project.version.name="${GIT_REF}-${BUILD_NUMBER}" \
+                      --detect.source.path="${WORKSPACE}"
                   '''
                 }
               } else {
@@ -166,9 +174,14 @@ pipeline {
                 ]) {
                   sh '''#!/usr/bin/env bash
                     set -euo pipefail
+                    command -v java >/dev/null
+                    test -f "${VERACODE_SCAN_JAR}"
                     echo "Running Veracode scan"
-                    # Replace with your Veracode pipeline scan command.
-                    # java -jar pipeline-scan.jar -vid "${VERACODE_API_ID}" -vkey "${VERACODE_API_KEY}" -f build/source-${BUILD_NUMBER}.tar.gz
+                    java -jar "${VERACODE_SCAN_JAR}" \
+                      -vid "${VERACODE_API_ID}" \
+                      -vkey "${VERACODE_API_KEY}" \
+                      -f "build/source-${BUILD_NUMBER}.tar.gz" \
+                      --fail_on_severity="Very High,High"
                   '''
                 }
               } else {
@@ -197,9 +210,13 @@ pipeline {
             withCredentials([string(credentialsId: 'sysdig-secure-api-token', variable: 'SYSDIG_SECURE_API_TOKEN')]) {
               sh '''#!/usr/bin/env bash
                 set -euo pipefail
-                echo "Running Sysdig scan"
-                # Replace with your Sysdig CLI invocation.
-                # sysdig-cli-scanner --apiurl https://secure.sysdig.com --apitoken "${SYSDIG_SECURE_API_TOKEN}" "${FULL_IMAGE}"
+                command -v sysdig-cli-scanner >/dev/null
+                echo "Running Sysdig source scan"
+                sysdig-cli-scanner \
+                  --apiurl "${SYSDIG_API_URL}" \
+                  --apitoken "${SYSDIG_SECURE_API_TOKEN}" \
+                  --console-log \
+                  "dir:${WORKSPACE}"
               '''
             }
           } else {

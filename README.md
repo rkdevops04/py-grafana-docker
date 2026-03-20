@@ -160,6 +160,9 @@ This repository now includes a Declarative Pipeline at `Jenkinsfile` with the re
 - Build agent tools:
   - `python3`, `pip3`, `docker`
   - `sonar-scanner` (if Sonar stage is enabled)
+  - `curl` (for Black Duck Detect bootstrap)
+  - `java` + Veracode Pipeline Scan jar (for Veracode stage)
+  - `sysdig-cli-scanner` (for Sysdig stage)
 
 ### Suggested Jenkins Credentials
 - `docker-registry-creds` (Username/Password)
@@ -171,7 +174,10 @@ This repository now includes a Declarative Pipeline at `Jenkinsfile` with the re
 ### Notes
 - Sonar stage is parameter-driven (`RUN_SONAR`) so the pipeline can run in environments without Sonar.
 - Security scan stages are included and parameter-driven (`RUN_BLACKDUCK`, `RUN_VERACODE`, `RUN_SYSDIG`).
-- Replace placeholder scan commands in `Jenkinsfile` with your organization-specific commands.
+- Scan commands are now wired with standard CLIs:
+  - Black Duck Detect uses `BLACKDUCK_URL` + `blackduck-api-token`.
+  - Veracode uses `VERACODE_SCAN_JAR` + (`veracode-api-id`, `veracode-api-key`).
+  - Sysdig source scan uses `SYSDIG_API_URL` + `sysdig-secure-api-token`.
 - Docker publish is controlled by `PUBLISH_DOCKER_IMAGE`.
 
 ## Rancher (Kubernetes): App, Metrics, and Logs
