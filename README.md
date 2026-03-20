@@ -5,6 +5,89 @@ Hello
 ## Project Overview
 This project encapsulates everything you need to run Grafana in a Docker container effortlessly. It includes a preconfigured setup with various options to customize your Grafana installation.
 
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+  U[User / Browser]
+
+  subgraph DockerCompose[Docker Compose Stack]
+    A[Flask App\n5000 app / 8000 metrics]
+    P[Prometheus\n:9090]
+    G[Grafana\n:3000]
+    J[Jaeger\nOTLP :4317 / UI :16686]
+    R[Rancher Optional\n:8443]
+  end
+
+  subgraph K8s[Optional Kubernetes via Rancher]
+    I[Ingress\nflask-app.example.com]
+    S[Service\nflask-app]
+    D[Deployment\nflask-app pod]
+    SM[ServiceMonitor\nfor Prometheus Operator]
+  end
+
+  U -->|HTTP /| A
+  A -->|/metrics| P
+  A -->|OTLP traces| J
+  P -->|datasource| G
+  U -->|Dashboards| G
+  U -->|Trace UI| J
+
+  R -->|manages cluster| K8s
+  U -->|HTTP /| I --> S --> D
+  D -->|/metrics :8000| SM
+```
+
+### Runtime Flow (Quick View)
+- App traffic goes to Flask on port 5000.
+- Flask exposes Prometheus metrics on port 8000.
+- Flask exports OpenTelemetry traces to Jaeger (OTLP gRPC).
+- Prometheus scrapes metrics and Grafana visualizes them.
+- Optional Rancher/Kubernetes path uses Ingress, Service, Deployment, and ServiceMonitor.
+
+## Data Flow Diagram
+
+```mermaid
+flowchart LR
+  %% External entities
+  E1[External Entity\nUser / Client]
+  E2[External Entity\nGrafana UI]
+  E3[External Entity\nJaeger UI]
+
+  %% Processes
+  P1((1.0\nRequest Handling\nFlask API :5000))
+  P2((2.0\nMetrics Processing\n/metrics :8000))
+  P3((3.0\nTrace Processing\nOTLP Export))
+  P4((4.0\nMetrics Query\nPromQL Engine))
+  P5((5.0\nTrace Query\nTrace Lookup))
+
+  %% Data stores
+  D1[(D1\nPrometheus TSDB)]
+  D2[(D2\nJaeger Trace Store)]
+
+  %% Request/response flow
+  E1 -->|HTTP GET /| P1
+  P1 -->|HTTP 200 Hello, World!| E1
+
+  %% Metrics flow
+  P1 -->|request_duration_seconds samples| P2
+  P2 -->|scrape payload| D1
+  E2 -->|dashboard query| P4
+  P4 -->|read time-series| D1
+  P4 -->|panel data| E2
+  E2 -->|dashboard view| E1
+
+  %% Trace flow
+  P1 -->|span events, attributes| P3
+  P3 -->|OTLP trace data :4317| D2
+  E3 -->|trace search query| P5
+  P5 -->|read trace spans| D2
+  P5 -->|trace details| E3
+  E3 -->|trace inspection| E1
+```
+
+DFD notation used: External Entity (rectangle), Process (circle), Data Store (open-ended store).
+
 ## Table of Contents
 - [Requirements](#requirements)
 - [Installation](#installation)
@@ -42,6 +125,54 @@ This project encapsulates everything you need to run Grafana in a Docker contain
   pip install -r requirements.txt
   pytest
   ```
+
+## Jenkins CI/CD Pipeline
+This repository now includes a Declarative Pipeline at `Jenkinsfile` with the requested stage flow:
+
+- `checkout scm`
+- `git checkout`
+- `pre-flight`
+- `run pipeline`
+- `prepare`
+- `validate`
+- `build`
+- `unit tests`
+- `sonar qualityGate`
+- `parallel scurtiy scans`
+- `blackduck scan`
+- `veracode scan`
+- `package`
+- `sysdig`
+- `publish`
+- `tag artifact`
+- `verfication`
+- `docker build`
+- `publish docker image`
+- `declarative post actions`
+
+### Jenkins Prerequisites
+- Jenkins plugins:
+  - Pipeline
+  - Git
+  - JUnit
+  - SonarQube Scanner for Jenkins (for `sonar qualityGate`)
+  - Docker Pipeline (optional but recommended)
+- Build agent tools:
+  - `python3`, `pip3`, `docker`
+  - `sonar-scanner` (if Sonar stage is enabled)
+
+### Suggested Jenkins Credentials
+- `docker-registry-creds` (Username/Password)
+- `blackduck-api-token` (Secret text)
+- `veracode-api-id` (Secret text)
+- `veracode-api-key` (Secret text)
+- `sysdig-secure-api-token` (Secret text)
+
+### Notes
+- Sonar stage is parameter-driven (`RUN_SONAR`) so the pipeline can run in environments without Sonar.
+- Security scan stages are included and parameter-driven (`RUN_BLACKDUCK`, `RUN_VERACODE`, `RUN_SYSDIG`).
+- Replace placeholder scan commands in `Jenkinsfile` with your organization-specific commands.
+- Docker publish is controlled by `PUBLISH_DOCKER_IMAGE`.
 
 ## Rancher (Kubernetes): App, Metrics, and Logs
 
