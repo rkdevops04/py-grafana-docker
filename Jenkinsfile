@@ -16,6 +16,7 @@ pipeline {
     string(name: 'SYSDIG_API_URL', defaultValue: 'https://secure.sysdig.com', description: 'Sysdig Secure API URL')
     booleanParam(name: 'PUSH_GIT_TAG', defaultValue: false, description: 'Push git tag to origin')
     booleanParam(name: 'PUBLISH_DOCKER_IMAGE', defaultValue: false, description: 'Push Docker image to registry')
+    booleanParam(name: 'RUN_DOCKER_STAGES', defaultValue: false, description: 'Run Docker pre-flight check, docker build and image publish stages')
     booleanParam(name: 'RUN_SONAR', defaultValue: false, description: 'Run Sonar scan and quality gate')
     booleanParam(name: 'RUN_BLACKDUCK', defaultValue: false, description: 'Run Black Duck scan')
     booleanParam(name: 'RUN_VERACODE', defaultValue: false, description: 'Run Veracode scan')
@@ -49,10 +50,14 @@ pipeline {
           set -euo pipefail
           command -v python3
           command -v pip3
-          command -v docker
           python3 --version
           pip3 --version
-          docker --version
+          if [ "${RUN_DOCKER_STAGES}" = "true" ]; then
+            command -v docker
+            docker --version
+          else
+            echo "Skipping docker pre-flight checks (RUN_DOCKER_STAGES=false)"
+          fi
         '''
       }
     }
@@ -256,6 +261,9 @@ pipeline {
     }
 
     stage('docker build') {
+      when {
+        expression { return params.RUN_DOCKER_STAGES }
+      }
       steps {
         script {
           env.GIT_SHA_SHORT = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
@@ -267,6 +275,9 @@ pipeline {
     }
 
     stage('publish docker image') {
+      when {
+        expression { return params.RUN_DOCKER_STAGES }
+      }
       steps {
         script {
           if (params.PUBLISH_DOCKER_IMAGE) {
