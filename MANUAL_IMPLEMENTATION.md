@@ -155,7 +155,17 @@ echo "Rancher: https://${CODESPACE_NAME}-8443.app.github.dev"
 - Username: `admin`
 - Password: `admin`
 
-## 4.2 Rancher login (optional)
+## 4.2 Jenkins login (optional)
+- URL (local): `http://localhost:8088/`
+- URL (Codespaces tunnel example): `https://<codespace-name>-8088.app.github.dev/`
+- Default container name used in this repo: `jenkins-local`
+
+Check Jenkins availability:
+```bash
+curl -I http://localhost:8088/
+```
+
+## 4.3 Rancher login (optional)
 Start Rancher:
 ```bash
 docker compose --profile rancher up -d rancher
@@ -303,6 +313,12 @@ docker compose restart rancher
 ```bash
 docker compose down
 docker compose down -v
+```
+
+To stop every running Docker container on the host (including non-compose containers such as `jenkins-local`):
+
+```bash
+docker ps -q | xargs -r docker stop
 ```
 
 ## 9.4 Run updated `app.py` after code changes
