@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1380" height="820" viewBox="0 0 1380 820" role="img" aria-labelledby="title desc">
+  <title id="title">Infrastructure Level Architecture</title>
+  <desc id="desc">Docker Compose observability stack with optional Rancher managed Kubernetes deployment and monitoring integration.</desc>
+
+  <defs>
+    <style>
+      .title { font: 700 30px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 500 16px 'Segoe UI', Arial, sans-serif; fill: #334155; }
+      .cluster-title { font: 700 18px 'Segoe UI', Arial, sans-serif; fill: #1e3a8a; }
+      .node-title { font: 700 15px 'Segoe UI', Arial, sans-serif; fill: #0f172a; }
+      .node-text { font: 500 12px 'Segoe UI', Arial, sans-serif; fill: #334155; }
+      .edge-label { font: 600 12px 'Segoe UI', Arial, sans-serif; fill: #1f2937; }
+      .edge { stroke: #334155; stroke-width: 2.1; fill: none; marker-end: url(#arrow); }
+      .edge-soft { stroke: #64748b; stroke-width: 2; stroke-dasharray: 7 5; fill: none; marker-end: url(#arrow); }
+    </style>
+    <marker id="arrow" markerWidth="12" markerHeight="9" refX="10" refY="4.5" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L11,4.5 L0,9 z" fill="#334155" />
+    </marker>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#f1f5f9" />
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1380" height="820" fill="url(#bg)" />
+
+  <text x="36" y="56" class="title">Infrastructure Level Architecture (py-grafana-docker)</text>
+  <text x="36" y="84" class="subtitle">Docker Compose runtime plus optional Rancher/Kubernetes deployment overlays</text>
+
+  <rect x="26" y="110" width="640" height="670" rx="16" fill="#ffffff" stroke="#cbd5e1" />
+  <text x="50" y="144" class="cluster-title">Docker Compose Network: dev-net</text>
+
+  <rect x="70" y="190" width="220" height="105" rx="12" fill="#e0f2fe" stroke="#38bdf8" />
+  <text x="90" y="222" class="node-title">flask-app</text>
+  <text x="90" y="244" class="node-text">Ports: 5000, 8000</text>
+  <text x="90" y="264" class="node-text">OTEL_EXPORTER_OTLP_ENDPOINT</text>
+  <text x="90" y="284" class="node-text">-> http://jaeger:4317</text>
+
+  <rect x="360" y="190" width="240" height="105" rx="12" fill="#ffedd5" stroke="#fb923c" />
+  <text x="380" y="222" class="node-title">prometheus</text>
+  <text x="380" y="244" class="node-text">Port: 9090</text>
+  <text x="380" y="264" class="node-text">Config: monitoring/prometheus.yml</text>
+  <text x="380" y="284" class="node-text">Scrape: flask-app:8000</text>
+
+  <rect x="70" y="360" width="220" height="105" rx="12" fill="#ecfccb" stroke="#84cc16" />
+  <text x="90" y="392" class="node-title">grafana</text>
+  <text x="90" y="414" class="node-text">Port: 3000</text>
+  <text x="90" y="434" class="node-text">Datasource: Prometheus</text>
+  <text x="90" y="454" class="node-text">Dashboards provisioned</text>
+
+  <rect x="360" y="360" width="240" height="105" rx="12" fill="#fce7f3" stroke="#f472b6" />
+  <text x="380" y="392" class="node-title">jaeger all-in-one</text>
+  <text x="380" y="414" class="node-text">OTLP gRPC: 4317</text>
+  <text x="380" y="434" class="node-text">UI: 16686</text>
+  <text x="380" y="454" class="node-text">Collector enabled</text>
+
+  <rect x="210" y="535" width="240" height="125" rx="12" fill="#ede9fe" stroke="#8b5cf6" />
+  <text x="230" y="567" class="node-title">rancher (optional profile)</text>
+  <text x="230" y="589" class="node-text">Ports: 8080, 8443</text>
+  <text x="230" y="609" class="node-text">Manages Kubernetes cluster</text>
+  <text x="230" y="629" class="node-text">Volume: rancher-data</text>
+
+  <path d="M290 242 L360 242" class="edge" />
+  <text x="304" y="228" class="edge-label">/metrics scrape</text>
+
+  <path d="M290 252 C330 252, 330 412, 360 412" class="edge-soft" />
+  <text x="296" y="334" class="edge-label">OTLP traces</text>
+
+  <path d="M360 406 L290 406" class="edge" />
+  <text x="304" y="428" class="edge-label">Prometheus datasource</text>
+
+  <path d="M330 535 L330 465" class="edge-soft" />
+  <text x="340" y="504" class="edge-label">optional ops path</text>
+
+  <rect x="712" y="110" width="640" height="670" rx="16" fill="#ffffff" stroke="#cbd5e1" />
+  <text x="736" y="144" class="cluster-title">Kubernetes (via k8s manifests)</text>
+
+  <rect x="760" y="190" width="220" height="95" rx="12" fill="#dbeafe" stroke="#60a5fa" />
+  <text x="780" y="222" class="node-title">Namespace</text>
+  <text x="780" y="244" class="node-text">observability-demo</text>
+  <text x="780" y="264" class="node-text">k8s/namespace.yaml</text>
+
+  <rect x="1030" y="190" width="280" height="95" rx="12" fill="#fef3c7" stroke="#f59e0b" />
+  <text x="1050" y="222" class="node-title">Ingress</text>
+  <text x="1050" y="244" class="node-text">Host: flask-app.example.com</text>
+  <text x="1050" y="264" class="node-text">Class: nginx</text>
+
+  <rect x="760" y="340" width="220" height="105" rx="12" fill="#e0f2fe" stroke="#38bdf8" />
+  <text x="780" y="372" class="node-title">Deployment</text>
+  <text x="780" y="394" class="node-text">flask-app replica: 1</text>
+  <text x="780" y="414" class="node-text">Container ports 5000/8000</text>
+  <text x="780" y="434" class="node-text">readiness + liveness probes</text>
+
+  <rect x="1030" y="340" width="280" height="105" rx="12" fill="#ffedd5" stroke="#fb923c" />
+  <text x="1050" y="372" class="node-title">Service (ClusterIP)</text>
+  <text x="1050" y="394" class="node-text">flask-app :5000 and :8000</text>
+  <text x="1050" y="414" class="node-text">Prometheus scrape annotations</text>
+  <text x="1050" y="434" class="node-text">Selector: app=flask-app</text>
+
+  <rect x="760" y="520" width="220" height="105" rx="12" fill="#dcfce7" stroke="#4ade80" />
+  <text x="780" y="552" class="node-title">ServiceMonitor</text>
+  <text x="780" y="574" class="node-text">monitoring.coreos.com/v1</text>
+  <text x="780" y="594" class="node-text">Endpoint: port metrics</text>
+  <text x="780" y="614" class="node-text">Interval: 15s</text>
+
+  <rect x="1030" y="520" width="280" height="105" rx="12" fill="#f3e8ff" stroke="#a855f7" />
+  <text x="1050" y="552" class="node-title">Rancher Monitoring Stack</text>
+  <text x="1050" y="574" class="node-text">Prometheus Operator</text>
+  <text x="1050" y="594" class="node-text">Discovers ServiceMonitor</text>
+  <text x="1050" y="614" class="node-text">Feeds Grafana in-cluster</text>
+
+  <path d="M980 238 L1030 238" class="edge" />
+  <text x="988" y="224" class="edge-label">route /</text>
+
+  <path d="M1170 286 L1170 340" class="edge" />
+  <text x="1180" y="320" class="edge-label">backend service</text>
+
+  <path d="M1030 392 L980 392" class="edge" />
+  <text x="987" y="414" class="edge-label">targets pods</text>
+
+  <path d="M980 550 L1030 550" class="edge" />
+  <text x="987" y="535" class="edge-label">scrape endpoint</text>
+
+  <path d="M1100 520 L1100 445" class="edge-soft" />
+  <text x="1110" y="485" class="edge-label">discovers service</text>
+
+  <path d="M450 598 C610 598, 620 598, 760 598" class="edge-soft" />
+  <text x="545" y="582" class="edge-label">cluster managed by Rancher</text>
+
+  <text x="36" y="804" class="subtitle">Manifests: k8s/flask-app.yaml, k8s/ingress.yaml, k8s/servicemonitor.yaml, docker-compose.yml</text>
+</svg>
